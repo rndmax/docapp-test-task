@@ -9,10 +9,21 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
+    "autoprefixer": "^9.7.2",
+    "css-loader": "^3.2.0",
     "express": "4.16.4",
     "html-webpack-plugin": "3.2.0",
+    "node-sass": "^4.13.0",
+    "postcss-loader": "^3.0.0",
+    "sass-loader": "^8.0.0",
+    "style-loader": "^1.0.0",
     "webpack": "4.28.4",
     "webpack-cli": "3.2.1",
     "webpack-dev-server": "3.1.14"
+  },
+  "dependencies": {
+    "bootstrap": "^4.4.0",
+    "jquery": "^3.4.1",
+    "popper.js": "^1.16.0"
   }
 }
