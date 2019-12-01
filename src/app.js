@@ -13,8 +13,6 @@ export default (function () {
 	let tbody = document.body.getElementsByTagName('tbody')[0];
 
     ROOMS.forEach(r => {
-        // let children = [];
-
         let numRoom = elt('th', {scope: 'row'});
         numRoom.innerHTML = r.code;
 
@@ -45,7 +43,8 @@ export default (function () {
             'data-room': `Room ${r.code}`,
             'data-startdate': r.appointment.start_date,
             'data-vitalsigns': vitalSigns(r.appointment.vital_signs),
-            'data-by': by(r.appointment)
+            'data-by': by(r.appointment),
+            'data-initials': initials(r.appointment) 
         };
 
         let infoIcon = elt('td', modalAttr, elt('i', {class: 'fas fa-info-circle'}));
@@ -70,16 +69,16 @@ export default (function () {
                     <li class='list-group-item'>By: <span id='by' class='font-weight-bold'></span></li>
                 </ul>
                 <br>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" onClick="selDeselAllCheckboxes(this)" id="defaultCheck">
-                    <label class="form-check-label" for="defaultCheck">
+                <div class='form-check'>
+                    <input class='form-check-input' type='checkbox' onClick='selDeselAllCheckboxes(this)' id='defaultCheck'>
+                    <label class='form-check-label' for='defaultCheck'>
                         Select/Deselect all forms
                     </label>
                 </div>
                 ${consentForms()}
             </div>
-            <div class="modal-footer d-none" id='signButton'>
-                <button type="button" class="btn btn-secondary" onClick='showTabs()'>Sign</button>
+            <div class='modal-footer d-none' id='signButton'>
+                <button type='button' class='btn btn-secondary' onClick='showTabs()'>Sign</button>
             </div>               
         </div>
     </div>`;
@@ -94,7 +93,8 @@ $('#modal').on('show.bs.modal', function (event) {
     modal.find('.modal-title').text(button.data('room'));
     modal.find('#startDate').text(button.data('startdate'));
     modal.find('#vitalSigns').text(button.data('vitalsigns'));
-    modal.find('#by').text(button.data('by'));
+    modal.find('#by').text(button.data('by'))
+    				 .attr('data-initials', button.data('initials'));
 
     // clear all checkboxes
     let checkboxes = document.getElementsByName('checkbox');
@@ -114,7 +114,7 @@ $('#modal').on('hide.bs.modal', function (e) {
 	if (tabBody && tabBody.parentNode) {
 		tabBody.parentNode.removeChild(tabBody);
 	}
-})
+});
 
 function consentForms() {
     let response ='';
@@ -124,9 +124,13 @@ function consentForms() {
             <label class='form-check-label' for='defaultCheck${n}'>
                 ${f.title}
             </label>
-        </div>`
+        </div>`;
     });
     return response;
+}
+
+function initials(d) {
+	return `${d.first_name.charAt().toUpperCase()}${d.last_name.charAt().toUpperCase()}`;
 }
 
 function sendReq (fName, clb) {
@@ -151,7 +155,7 @@ function sendReq (fName, clb) {
 	    req.onerror = function() {
 	        console.error( 'Connection error: ' + req.status);
 	    };
-    })
+    });
 }
 
 function fetch(n) {
@@ -171,18 +175,26 @@ function createFormDetailsList (n, resp) {
 	resp.forEach((el,n) => {
 		let li = elt('li', {class: 'list-group-item'});
 		li.innerHTML = el.need_initials ? `<div class='form-check'>
-					<input class='form-check-input' type='checkbox' value='' id='formDetailsListChbx-${n}'>
+					<input class='form-check-input' type='checkbox' onClick='replaceCheckbox(this)' value='' id='formDetailsListChbx-${n}'>
 					<label class='form-check-label' for='formDetailsListChbx-${n}'>
 						${el.content}
 					</label>
 				</div>` : el.content;
 		ul.appendChild(li);
-	})
+	});
 	let el = document.getElementById(n);
 	el.innerHTML = '';
 	el.appendChild(ul);
 	
 }
+
+window.replaceCheckbox = function (el) {
+	let modal = document.getElementById('modal');
+	let initials = document.getElementById('by').dataset.initials;
+	let text = el.nextElementSibling.innerHTML;
+	let parent = el.parentNode.parentNode;
+	parent.innerHTML = `<span class="font-weight-bold">${initials}</span> ${text}`;
+};
 
 window.showTabs = function () {
     let container = document.body.getElementsByClassName('modal-content')[0];
@@ -205,16 +217,17 @@ window.showTabs = function () {
         let divChild = elt('div', {class: 'tab-pane fade show active', id: data, role: 'tabpanel', 'aria-labelledby': `${data}-tab`});
         ul.appendChild(li);
         div.appendChild(divChild);
-    })
+    });
     mBody.appendChild(ul);
     mBody.appendChild(div);
     container.appendChild(mBody);
 
     //tabs click event
     $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    	e.preventDefault();
 		fetch(e.target.id.replace(/-tab/, ''));
-	})
-}
+	});
+};
 
 function removeSpacesLowercase (d) {
 	return d.replace(/\s/g, '_').toLowerCase();
@@ -226,7 +239,7 @@ window.showHideSignButton = function(v) {
     let checkBoxesArray = Array.from(document.getElementsByName('checkbox'));
     let checked = checkBoxesArray.some(el => {
         return el.checked;
-    })
+    });
     if (!v.checked && !checked) {
         button.classList.remove('d-all');
         button.classList.add('d-none');
@@ -234,7 +247,7 @@ window.showHideSignButton = function(v) {
         button.classList.remove('d-none');
         button.classList.add('d-all');
     }
-}
+};
 
 window.selDeselAllCheckboxes = function (source) {
     let checkboxes = document.getElementsByName('checkbox');
@@ -242,7 +255,7 @@ window.selDeselAllCheckboxes = function (source) {
         checkboxes[i].checked = source.checked;
     }
     showHideSignButton(source);
-}
+};
 
 function getAge(b) {
     return b ? `${new Date().getFullYear() - new Date(b).getFullYear()} years` : 'NA';
