@@ -85,24 +85,36 @@ export default (function () {
     </div>`;
 
     tbody.appendChild(modalNode);
-
-    // I use the jQuery because of its use by bootstrap
-    $('#modal').on('show.bs.modal', function (event) {
-        let button = $(event.relatedTarget);
-        let modal = $(this);
-        modal.find('.modal-title').text(button.data('room'));
-        modal.find('#startDate').text(button.data('startdate'));
-        modal.find('#vitalSigns').text(button.data('vitalsigns'));
-        modal.find('#by').text(button.data('by'));
-
-        // clear all checkboxes
-        let checkboxes = document.getElementsByName('checkbox');
-        for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = false;
-        }
-    });
-
 }());
+
+// I use the jQuery because of its use by bootstrap
+$('#modal').on('show.bs.modal', function (event) {
+    let button = $(event.relatedTarget);
+    let modal = $(this);
+    modal.find('.modal-title').text(button.data('room'));
+    modal.find('#startDate').text(button.data('startdate'));
+    modal.find('#vitalSigns').text(button.data('vitalsigns'));
+    modal.find('#by').text(button.data('by'));
+
+    // clear all checkboxes
+    let checkboxes = document.getElementsByName('checkbox');
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = false;
+    }
+});
+
+$('#modal').on('hide.bs.modal', function (e) {
+	// Hide "Sign" button
+	let button = document.getElementById('signButton');
+	button.classList.remove('d-all');
+    button.classList.add('d-none');
+
+    // Remove tabs
+	let tabBody = document.getElementById('tabBody');
+	if (tabBody && tabBody.parentNode) {
+		tabBody.parentNode.removeChild(tabBody);
+	}
+})
 
 function consentForms() {
     let response ='';
@@ -115,6 +127,97 @@ function consentForms() {
         </div>`
     });
     return response;
+}
+
+function sendReq (fName, clb) {
+
+	return new Promise((resolve, reject) => {
+
+	    let req = new XMLHttpRequest();
+
+	    req.open('GET', `/api/consent-form-details/${fName}.json`);
+
+	    req.send();
+
+	    req.onload = function() {
+	        if (req.status != 200) {
+	            console.error( 'Error: ' + req.status);
+	            reject(req.response);
+	        } else {
+	            resolve(req.response); 
+	        }
+	    };
+
+	    req.onerror = function() {
+	        console.error( 'Connection error: ' + req.status);
+	    };
+    })
+}
+
+function fetch(n) {
+	(async function(n) {
+		let resp  = await sendReq(n);
+		try {
+			resp = JSON.parse(resp);
+		} catch (e) {
+			console.error('Parse error: ', e);
+		}
+		createFormDetailsList (n, resp);
+	})(n);
+}
+
+function createFormDetailsList (n, resp) {
+	let ul = elt('ul', {class: 'list-group'});
+	resp.forEach((el,n) => {
+		let li = elt('li', {class: 'list-group-item'});
+		li.innerHTML = el.need_initials ? `<div class='form-check'>
+					<input class='form-check-input' type='checkbox' value='' id='formDetailsListChbx-${n}'>
+					<label class='form-check-label' for='formDetailsListChbx-${n}'>
+						${el.content}
+					</label>
+				</div>` : el.content;
+		ul.appendChild(li);
+	})
+	let el = document.getElementById(n);
+	el.innerHTML = '';
+	el.appendChild(ul);
+	
+}
+
+window.showTabs = function () {
+    let container = document.body.getElementsByClassName('modal-content')[0];
+    let checkBoxesArray = Array.from(document.getElementsByName('checkbox'));
+    let checkedForms = checkBoxesArray.filter(el => {
+        return el.checked; 
+    });
+
+    // send data request
+    fetch(removeSpacesLowercase(checkedForms[0].dataset.shorttitle));
+
+    let mBody = elt('div', {class: 'modal-body', id: 'tabBody'});
+    let ul = elt('ul', {class: 'nav nav-tabs', id: 'myTab', role: 'tablist'});
+    let div = elt('div', {class: 'tab-content', id: 'myTabContent'});
+
+    checkedForms.forEach((f, n) => {
+        let data = removeSpacesLowercase(f.dataset.shorttitle);
+        let li = elt('li', {class: 'nav-item'});
+        li.innerHTML = `<a class='nav-link${n === 0 ? ' active' : ''}' id='${data}-tab' data-toggle='tab' href='#${data}' role='tab' aria-controls='${data}' aria-selected='true'>${f.dataset.shorttitle}</a>`;
+        let divChild = elt('div', {class: 'tab-pane fade show active', id: data, role: 'tabpanel', 'aria-labelledby': `${data}-tab`});
+        ul.appendChild(li);
+        div.appendChild(divChild);
+    })
+    mBody.appendChild(ul);
+    mBody.appendChild(div);
+    container.appendChild(mBody);
+
+    //tabs click event
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+		fetch(e.target.id.replace(/-tab/, ''));
+	})
+}
+
+function removeSpacesLowercase (d) {
+	return d.replace(/\s/g, '_').toLowerCase();
 }
 
 // Not work for IE 6-11. Need polyfill
