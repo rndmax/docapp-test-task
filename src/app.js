@@ -12,7 +12,10 @@ export default (function () {
 
 	let tbody = document.body.getElementsByTagName('tbody')[0];
 
+	// We go through an array of rooms and create a DOM to display information in the form of a table
     ROOMS.forEach(r => {
+
+    	//Create the table cells with data
         let numRoom = elt('th', {scope: 'row'});
         numRoom.innerHTML = r.code;
 
@@ -29,7 +32,7 @@ export default (function () {
         startTime.innerHTML = new Date(`1970-01-01T${r.appointment.start_time}Z`).toLocaleTimeString({}, {timeZone:'UTC',hour12:true,hour:'2-digit',minute:'2-digit'});
 
         let waitingTime = elt('td');
-        waitingTime.innerHTML = new Date(r.update_time).toLocaleTimeString();
+        waitingTime.innerHTML = stopWatch(r);
 
         let docName = elt('td');
         docName.innerHTML = r.appointment.doctor_title;
@@ -86,6 +89,25 @@ export default (function () {
     tbody.appendChild(modalNode);
 }());
 
+/*
+ * Function for creating a DOM element with attributes and children.
+ *
+ * @param {String} - tag name of the item being created
+ * @param {Object} - object with tag attributes being created
+ * @param {An Element object[, An Element object[, An Element object]] ...} - Child items to be added to the parent being created.
+ * @return {StrAn Element objecting} - Returns a DOM element with attributes and children
+ */
+function elt(name, attrs, ...children) {
+    let dom = document.createElement(name);
+    for (let attr in attrs) {
+        dom.setAttribute(attr, attrs[attr]);
+    }
+    for (let child of children) {
+        dom.appendChild(child);
+    }
+    return dom;
+} 
+
 // I use the jQuery because of its use by bootstrap
 $('#modal').on('show.bs.modal', function (event) {
     let button = $(event.relatedTarget);
@@ -116,6 +138,12 @@ $('#modal').on('hide.bs.modal', function (e) {
 	}
 });
 
+/*
+ * Create a list of forms with checkboxes to select.
+ *
+ * @param {missing} 
+ * @return {String}
+ */
 function consentForms() {
     let response ='';
     CONSENTFORMS.forEach((f,n) => {
@@ -129,11 +157,23 @@ function consentForms() {
     return response;
 }
 
+/*
+ * Create patient initials for future use.
+ *
+ * @param {Array} 
+ * @return {String}
+ */
 function initials(d) {
 	return `${d.first_name.charAt().toUpperCase()}${d.last_name.charAt().toUpperCase()}`;
 }
 
-function sendReq (fName, clb) {
+/*
+ * The function of sending a request to receive data.
+ *
+ * @param {String} - file name 
+ * @return {Promise with Array} - serialized array
+ */
+function sendReq (fName) {
 
 	return new Promise((resolve, reject) => {
 
@@ -158,6 +198,11 @@ function sendReq (fName, clb) {
     });
 }
 
+/*
+ * Asynchronous function to handle asynchronous request to API.
+ *
+ * @param {String} - file name
+ */
 function fetch(n) {
 	(async function(n) {
 		let resp  = await sendReq(n);
@@ -170,6 +215,12 @@ function fetch(n) {
 	})(n);
 }
 
+/*
+ * The function creates an unordered list with a description of the forms, and also adds a checkbox if necessary.
+ *
+ * @param {String} - file name
+ * @param {Array} - serialized array
+ */
 function createFormDetailsList (n, resp) {
 	let ul = elt('ul', {class: 'list-group'});
 	resp.forEach((el,n) => {
@@ -184,10 +235,14 @@ function createFormDetailsList (n, resp) {
 	});
 	let el = document.getElementById(n);
 	el.innerHTML = '';
-	el.appendChild(ul);
-	
+	el.appendChild(ul);	
 }
 
+/*
+ * Function replaces the marked checkbox with client initials.
+ *
+ * @param {An Element object} - An Element object describing the DOM element object
+ */
 window.replaceCheckbox = function (el) {
 	let modal = document.getElementById('modal');
 	let initials = document.getElementById('by').dataset.initials;
@@ -196,6 +251,11 @@ window.replaceCheckbox = function (el) {
 	parent.innerHTML = `<span class="font-weight-bold">${initials}</span> ${text}`;
 };
 
+/*
+ * The function creates and displays tabs. Also, a handler is added to the neck, which loads the content into the tab when you click on the tab.
+ *
+ * @param {missing}
+ */
 window.showTabs = function () {
     let container = document.body.getElementsByClassName('modal-content')[0];
     let checkBoxesArray = Array.from(document.getElementsByName('checkbox'));
@@ -213,7 +273,7 @@ window.showTabs = function () {
     checkedForms.forEach((f, n) => {
         let data = removeSpacesLowercase(f.dataset.shorttitle);
         let li = elt('li', {class: 'nav-item'});
-        li.innerHTML = `<a class='nav-link${n === 0 ? ' active' : ''}' id='${data}-tab' data-toggle='tab' href='#${data}' role='tab' aria-controls='${data}' aria-selected='true'>${f.dataset.shorttitle}</a>`;
+        li.innerHTML = `<a class='nav-link${n === 0 ? ' active' : ''}' id='${data}-tab' data-toggle='tab' data-target='#${data}' role='tab' aria-controls='${data}' aria-selected='true'>${f.dataset.shorttitle}</a>`;
         let divChild = elt('div', {class: 'tab-pane fade show active', id: data, role: 'tabpanel', 'aria-labelledby': `${data}-tab`});
         ul.appendChild(li);
         div.appendChild(divChild);
@@ -257,6 +317,37 @@ window.selDeselAllCheckboxes = function (source) {
     showHideSignButton(source);
 };
 
+/*
+ * The function of calculating the patient's waiting time in the room.
+ *
+ * @param {Array} - room data array
+ * @return {String} - string with time
+ */
+function stopWatch(d) {
+    // Get the total amount of minutes of the updated time
+    let updDate = new Date(d.update_time);
+    let updH = updDate.getHours();
+    let updM = updDate.getMinutes();
+    let updS = updDate.getSeconds();
+    let updTotalMin = updH * 3600 + updM * 60 + updS;
+
+    // Set the total amount of minutes of the start time
+    let startDate = new Date(d.appointment.start_date);
+    let parseStartTime = d.appointment.start_time.match(/(\d{2}):(\d{2})/);
+    startDate.setHours((parseStartTime.length === 3 ? Number(parseStartTime[1]) : 0), (parseStartTime.length === 3 ? Number(parseStartTime[2]) : 0));
+    let startH = startDate.getHours();
+    let startM = startDate.getMinutes();
+    let startS = 0;
+    let startTotalMin = startH * 3600 + startM * 60 + startS;
+
+    // Calculate the time difference
+    let diff = Math.abs(updTotalMin - startTotalMin);
+    let diffH = String(Math.floor(diff / 3600)).padStart(2, '0');;
+    let diffM = String(Math.floor((diff - diffH * 3600) / 60)).padStart(2, '0');;
+    let diffS = String((diff - diffH * 3600 - diffM * 60)).padStart(2, '0');
+    return `${diffH}:${diffM}:${diffS}`;
+}
+
 function getAge(b) {
     return b ? `${new Date().getFullYear() - new Date(b).getFullYear()} years` : 'NA';
 }
@@ -270,13 +361,4 @@ function vitalSigns(data) {
     return `HT: ${data.height_ft}'${data.height_in}'', WT: ${data.weight}lbs., BMI: ${data.bmi}`;
 }
 
-function elt(name, attrs, ...children) {
-    let dom = document.createElement(name);
-    for (let attr in attrs) {
-        dom.setAttribute(attr, attrs[attr]);
-    }
-    for (let child of children) {
-        dom.appendChild(child);
-    }
-    return dom;
-} 
+
