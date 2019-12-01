@@ -117,6 +117,30 @@ function consentForms() {
     return response;
 }
 
+// Not work for IE 6-11. Need polyfill
+window.showHideSignButton = function(v) {
+    let button = document.getElementById('signButton');
+    let checkBoxesArray = Array.from(document.getElementsByName('checkbox'));
+    let checked = checkBoxesArray.some(el => {
+        return el.checked;
+    })
+    if (!v.checked && !checked) {
+        button.classList.remove('d-all');
+        button.classList.add('d-none');
+    } else {
+        button.classList.remove('d-none');
+        button.classList.add('d-all');
+    }
+}
+
+window.selDeselAllCheckboxes = function (source) {
+    let checkboxes = document.getElementsByName('checkbox');
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = source.checked;
+    }
+    showHideSignButton(source);
+}
+
 function getAge(b) {
     return b ? `${new Date().getFullYear() - new Date(b).getFullYear()} years` : 'NA';
 }
