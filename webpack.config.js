@@ -37,6 +37,17 @@ module.exports = {
             loader: 'sass-loader'
           }
         ]
+      },
+      {
+        enforce: 'pre',
+        test: /\.js$/,
+        exclude: /node_modules/,
+        loader: 'eslint-loader',
+        options: {
+          cache: true,
+          emitError: true,
+          emitWarnings: true
+        }
       }
     ]
   },

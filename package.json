@@ -10,7 +10,10 @@
   },
   "devDependencies": {
     "autoprefixer": "^9.7.2",
+    "babel-eslint": "^10.0.3",
     "css-loader": "^3.2.0",
+    "eslint": "^6.7.2",
+    "eslint-loader": "^3.0.2",
     "express": "4.16.4",
     "html-webpack-plugin": "3.2.0",
     "node-sass": "^4.13.0",
