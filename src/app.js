@@ -4,7 +4,9 @@
 import 'bootstrap';
 import '@fortawesome/fontawesome-free/js/all';
 import './scss/app.scss';
+import $ from 'jquery';
 import ROOMS from 'rooms.json';
+import CONSENTFORMS from 'consent-forms.json';
 
 export default (function () {
 
@@ -51,7 +53,69 @@ export default (function () {
         tbody.appendChild(elt('tr', modalAttr, numRoom, code, firstLastName, roomStatus, startTime, waitingTime, docName, assistName, infoIcon));
     });
 
+    // Create popup modal
+    let modalNode = elt('div', {class: 'modal fade', id: 'modal', tabindex: '-1', role: 'dialog', 'aria-labelledby': 'modalTitle', 'aria-hidden': 'true'});
+    modalNode.innerHTML =  `<div class='modal-dialog modal-dialog-centered' role='document'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='modalTitle'></h5>
+                <button type='button' class='close' data-dismiss='modal' aria-label='Close'>
+                    <span aria-hidden='true'>&times;</span>
+                </button>
+            </div>
+            <div class='modal-body'>
+                <ul class="list-group">
+                    <li class='list-group-item'>Start date: <span id='startDate' class='font-weight-bold'></span></li>
+                    <li class='list-group-item'>Vital signs: <span id='vitalSigns' class='font-weight-bold'></span></li>
+                    <li class='list-group-item'>By: <span id='by' class='font-weight-bold'></span></li>
+                </ul>
+                <br>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" onClick="selDeselAllCheckboxes(this)" id="defaultCheck">
+                    <label class="form-check-label" for="defaultCheck">
+                        Select/Deselect all forms
+                    </label>
+                </div>
+                ${consentForms()}
+            </div>
+            <div class="modal-footer d-none" id='signButton'>
+                <button type="button" class="btn btn-secondary" onClick='showTabs()'>Sign</button>
+            </div>               
+        </div>
+    </div>`;
+
+    tbody.appendChild(modalNode);
+
+    // I use the jQuery because of its use by bootstrap
+    $('#modal').on('show.bs.modal', function (event) {
+        let button = $(event.relatedTarget);
+        let modal = $(this);
+        modal.find('.modal-title').text(button.data('room'));
+        modal.find('#startDate').text(button.data('startdate'));
+        modal.find('#vitalSigns').text(button.data('vitalsigns'));
+        modal.find('#by').text(button.data('by'));
+
+        // clear all checkboxes
+        let checkboxes = document.getElementsByName('checkbox');
+        for (let i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = false;
+        }
+    });
+
 }());
+
+function consentForms() {
+    let response ='';
+    CONSENTFORMS.forEach((f,n) => {
+        response += `<div class="form-check">
+            <input class='form-check-input' type='checkbox' name='checkbox' data-shorttitle='${f.short_title}' onClick='showHideSignButton(this)' id='defaultCheck${n}'>
+            <label class='form-check-label' for='defaultCheck${n}'>
+                ${f.title}
+            </label>
+        </div>`
+    });
+    return response;
+}
 
 function getAge(b) {
     return b ? `${new Date().getFullYear() - new Date(b).getFullYear()} years` : 'NA';
