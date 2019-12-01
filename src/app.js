@@ -57,7 +57,7 @@ export default (function () {
 
     // Create popup modal
     let modalNode = elt('div', {class: 'modal fade', id: 'modal', tabindex: '-1', role: 'dialog', 'aria-labelledby': 'modalTitle', 'aria-hidden': 'true'});
-    modalNode.innerHTML =  `<div class='modal-dialog modal-dialog-centered' role='document'>
+    modalNode.innerHTML =  `<div class='modal-dialog modal-lg modal-dialog-centered' role='document'>
         <div class='modal-content'>
             <div class='modal-header'>
                 <h5 class='modal-title' id='modalTitle'></h5>
@@ -274,7 +274,7 @@ window.showTabs = function () {
         let data = removeSpacesLowercase(f.dataset.shorttitle);
         let li = elt('li', {class: 'nav-item'});
         li.innerHTML = `<a class='nav-link${n === 0 ? ' active' : ''}' id='${data}-tab' data-toggle='tab' data-target='#${data}' role='tab' aria-controls='${data}' aria-selected='true'>${f.dataset.shorttitle}</a>`;
-        let divChild = elt('div', {class: 'tab-pane fade show active', id: data, role: 'tabpanel', 'aria-labelledby': `${data}-tab`});
+        let divChild = elt('div', {class: `tab-pane fade show${n === 0 ? ' active' : ''}`, id: data, role: 'tabpanel', 'aria-labelledby': `${data}-tab`});
         ul.appendChild(li);
         div.appendChild(divChild);
     });
