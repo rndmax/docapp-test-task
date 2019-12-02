@@ -8,6 +8,37 @@ import $ from 'jquery';
 import ROOMS from 'rooms.json';
 import CONSENTFORMS from 'consent-forms.json';
 
+/*
+ * The function constructor creates a watch and controls the timing.
+ *
+ * @param {Object} - object with time data
+ * @param {An Element object} - DOM element that displays a timer
+ * @return {String} - returns a string with a time value
+ */
+class Watch {
+    constructor(time, el) {
+        this.el = el;
+        this.s = Number(time.s);
+        this.m = Number(time.m);
+        this.h = Number(time.h);
+        (function(t){
+            setTimeout(() => t.step(), 1000);
+        })(this);
+    }
+    step() {
+        this.s === 59 ? ( this.s = 0, this.m ++) : this.s ++;
+        this.m === 60 ? ( this.m = 0, this.h ++) : this.m;
+        (function(t){
+            setTimeout(() => t.step(), 1000);
+        })(this);
+        this.resp();
+    }
+    resp() {
+        this.el.innerHTML = `${this.h}:${String(this.m).padStart(2, '0')}:${String(this.s).padStart(2, '0')}`;
+        return this.el.innerHTML;
+    }
+}
+
 export default (function () {
 
 	let tbody = document.body.getElementsByTagName('tbody')[0];
@@ -31,8 +62,11 @@ export default (function () {
         let startTime = elt('td');
         startTime.innerHTML = new Date(`1970-01-01T${r.appointment.start_time}Z`).toLocaleTimeString({}, {timeZone:'UTC',hour12:true,hour:'2-digit',minute:'2-digit'});
 
+        // watch
         let waitingTime = elt('td');
-        waitingTime.innerHTML = stopWatch(r);
+        let wt = setWaitingTime(r);
+        let watch = new Watch(wt, waitingTime);
+        waitingTime.innerHTML = watch.resp();
 
         let docName = elt('td');
         docName.innerHTML = r.appointment.doctor_title;
@@ -95,7 +129,7 @@ export default (function () {
  * @param {String} - tag name of the item being created
  * @param {Object} - object with tag attributes being created
  * @param {An Element object[, An Element object[, An Element object]] ...} - Child items to be added to the parent being created.
- * @return {StrAn Element objecting} - Returns a DOM element with attributes and children
+ * @return {An Element object} - Returns a DOM element with attributes and children
  */
 function elt(name, attrs, ...children) {
     let dom = document.createElement(name);
@@ -321,9 +355,9 @@ window.selDeselAllCheckboxes = function (source) {
  * The function of calculating the patient's waiting time in the room.
  *
  * @param {Array} - room data array
- * @return {String} - string with time
+ * @return {Object} - object with time data
  */
-function stopWatch(d) {
+function setWaitingTime(d) {
     // Get the total amount of minutes of the updated time
     let updDate = new Date(d.update_time);
     let updH = updDate.getHours();
@@ -342,10 +376,10 @@ function stopWatch(d) {
 
     // Calculate the time difference
     let diff = Math.abs(updTotalMin - startTotalMin);
-    let diffH = String(Math.floor(diff / 3600)).padStart(2, '0');;
-    let diffM = String(Math.floor((diff - diffH * 3600) / 60)).padStart(2, '0');;
-    let diffS = String((diff - diffH * 3600 - diffM * 60)).padStart(2, '0');
-    return `${diffH}:${diffM}:${diffS}`;
+    let h = String(Math.floor(diff / 3600)).padStart(2, '0');;
+    let m = String(Math.floor((diff - h * 3600) / 60)).padStart(2, '0');;
+    let s = String((diff - h * 3600 - m * 60)).padStart(2, '0');
+    return {s, m, h};
 }
 
 function getAge(b) {
